@@ -8,8 +8,116 @@ import './App.css';
 const ArraySizeMin = 1;
 const ArraySizeMax = 31;
 
-const drawMC = function(ctx, canvas, object, index) {
-  if(ctx!==null && object !== null)
+const drawMC = function(ctx, canvas, object, index, mode) {
+  switch (mode) {
+    case "Heap":
+      drawHeap(ctx, canvas, object, index);
+      break;
+    case "Bar":
+      drawBar(ctx, canvas, object, index);
+      break;
+  }
+}
+
+const drawBar = function(ctx, canvas, object, index) {
+  if(object !== null)
+  {
+    ctx.fillStyle = "#AAAAAA";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let BarViewer = require('./bar.js');
+    let arr = object[index].state.values[0];
+    let bv = new BarViewer(canvas, 'dst', arr);
+    bv.sep.setLen(arr.length);
+    let seppos = 1;
+    let pow = 2;
+    while (seppos < arr.length) {
+      bv.sep.add(seppos);
+      seppos += pow;
+      pow = pow << 1;
+    }
+    let tmp = object[index].state.values[1];
+    bv.tmp.setName('tmp');
+    if (tmp != null) {
+      bv.tmp.setValue(tmp);
+    }
+    if (object[index].state.values[5] != null) {
+      let root = object[index].state.values[5];
+      for (let i = 0; i <= object[index].state.values[2]; i++) {
+        let n = root+1;
+        
+        if (n > i+1) {
+          bv.setColor(i, '333333');
+        } else {
+          let j = i+1;
+          while (true) {
+            if ((j) < (n << 1)) {
+              break;
+            }
+            j = j>>1;
+          }
+          if ((j & n) != j) {
+            bv.setColor(i, '333333');
+          }
+        }
+      }
+    }
+    for (let i = object[index].state.values[2] + 1; i < arr.length; i++) {
+      bv.setColor(i, 'AAFFAA');
+    }
+    if (object[index].state.values[3] != null && object[index].state.values[1] != null) {
+      bv.setColor(object[index].state.values[3], '777777');
+    }
+    switch (object[index].state.process) {
+      case 'comp':
+        if (object[index].object.left.type == 'array') {
+          bv.setColor(object[index].object.left.info.index, 'FFCCAA');
+        }
+        if (object[index].object.right.type == 'array') {
+          bv.setColor(object[index].object.right.info.index, 'FFCCAA');
+        }
+        break;
+      case 'swap':
+        bv.setColor(object[index].object.left.info.index, 'FFAAAA');
+        bv.setColor(object[index].object.right.info.index, 'FFAAAA');
+        break;
+      case 'change':
+        if (object[index].object.info.objName=='arr') {
+          if (object[index].result != object[index].state.values[1]) {
+            bv.setColor(object[index].state.values[4], 'AAAAFF');
+          }
+          bv.setColor(object[index].object.info.index, 'FFAAFF');
+          bv.setValue(object[index].object.info.index, object[index].result);
+        }
+        break;
+    }
+    switch (object[index].state.process) {
+      case 'comp':
+        if (object[index].object.left.info.objName=='tmp') {
+          bv.tmp.setColor('FFCCAA');
+        }
+        if (object[index].object.right.info.objName=='tmp') {
+          bv.tmp.setColor('FFCCAA');
+        }
+        break;
+      case 'set':
+        if (object[index].object.info.objName=='tmp') {
+          bv.tmp.setColor('FFAAAA');
+        }
+        break;
+      case 'change':
+        if (object[index].object.info.objName=='arr') {
+          if (object[index].result == tmp) {
+            bv.tmp.setColor('AAAAFF');
+          }
+        }
+        break;
+    }
+    bv.show();
+  }
+}
+
+const drawHeap = function(ctx, canvas, object, index) {
+  if(object !== null)
   {
     ctx.fillStyle = "#AAAAAA";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -88,7 +196,7 @@ const drawMC = function(ctx, canvas, object, index) {
   }
 }
 const drawAC1 = function(ctx, canvas, object, index) {
-  if(ctx!==null && object !== null)
+  if(object !== null)
   {
     ctx.fillStyle = "#AAAAAA";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -149,7 +257,7 @@ const drawAC1 = function(ctx, canvas, object, index) {
   }
 }
 const drawAC2 = function(ctx, canvas, object, index) {
-  if(ctx!==null && object !== null)
+  if(object !== null)
   {
     ctx.fillStyle = "#AAAAAA";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -187,7 +295,7 @@ const drawAC2 = function(ctx, canvas, object, index) {
 }
 const drawVC = function(ctx, canvas, object, index) {
   let y = 20;
-  if(ctx!==null && object !== null)
+  if(object !== null)
   {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.font = "14pt sans-serif";
@@ -436,6 +544,8 @@ const HeapSort = function() {
   const [objListIndex,setObjListIndex] = useState(0);
   const [obj,setObj] = useState(null);
   const [val, setVal] = useState("1");
+  const [mode, setMode] = useState("Heap");
+  const [reloaded,setReloaded] = useState(false);
   useEffect(()=>{
     let mc = document.getElementById('MainCanvas');
     let mctx = mc.getContext("2d");
@@ -444,7 +554,9 @@ const HeapSort = function() {
     document.title = 'Sort - Heap Sort';
   },[]);
   useEffect(()=>{
-    drawMC(contextM, canvasM, obj, objListIndex);
+    if (contextM != null) {
+      drawMC(contextM, canvasM, obj, objListIndex, mode);
+    }
   },[contextM, obj]);
 
   useEffect(()=>{
@@ -454,7 +566,9 @@ const HeapSort = function() {
     setCanvasA1(mc);
   },[]);
   useEffect(()=>{
-    drawAC1(contextA1, canvasA1, obj, objListIndex);
+    if (contextA1 != null) {
+      drawAC1(contextA1, canvasA1, obj, objListIndex);
+    }
   },[contextA1, obj]);
 
   useEffect(()=>{
@@ -464,7 +578,9 @@ const HeapSort = function() {
     setCanvasA2(mc);
   },[]);
   useEffect(()=>{
-    drawAC2(contextA2, canvasA2, obj, objListIndex);
+    if (contextA2 != null) {
+      drawAC2(contextA2, canvasA2, obj, objListIndex);
+    }
   },[contextA2, obj]);
 
   useEffect(()=>{
@@ -474,8 +590,17 @@ const HeapSort = function() {
     setCanvasV(mc);
   },[]);
   useEffect(()=>{
-    drawVC(contextV, canvasV, obj, objListIndex);
+    if (contextV != null) {
+      drawVC(contextV, canvasV, obj, objListIndex);
+    }
   },[contextV, obj]);
+
+  useEffect(()=>{
+    if (reloaded) {
+      stateChanged();
+      setReloaded(false);
+    }
+  },[reloaded]);
 
   const onIndexChanged = (e) => {
     if (obj == null) return;
@@ -492,6 +617,17 @@ const HeapSort = function() {
 
   const onQuit = () => {
     window.electron.ipcRenderer.sendMessage('Quit', true);
+  };
+  const onMode = () => {
+    switch (mode) {
+      case 'Heap':
+        setMode('Bar');
+        break;
+      case 'Bar':
+        setMode('Heap');
+        break;
+    }
+    setReloaded(true);
   };
   const onFirst = () => {
     indexChanged(0);
@@ -517,11 +653,14 @@ const HeapSort = function() {
     }
     indexChanged(n);
   };
-  const indexChanged = (index) => {
-    drawMC(contextM, canvasM, obj, index);
+  const stateChanged = (index=objListIndex) => {
+    drawMC(contextM, canvasM, obj, index, mode);
     drawAC1(contextA1, canvasA1, obj, index);
     drawAC2(contextA2, canvasA2, obj, index);
     drawVC(contextV, canvasV, obj, index);
+  }
+  const indexChanged = (index) => {
+    stateChanged(index);
     document.getElementById('maxValue_viewer').innerHTML=(index+1)+' / '+obj.length;
     setObjListIndex(index);
   };
@@ -557,18 +696,23 @@ const HeapSort = function() {
         <canvas id="ArrayCanvas2" width="1000" height="70">
         </canvas>
       </div>
-      <div className="NextPrev">
-        <button type="button" onClick={onNext}>Next</button>
-        <button type="button" onClick={onPrev}>Prev</button>
-        <button type="button" onClick={onFirst}>First</button>
-        <button type="button" onClick={onFinal}>Final</button>
-        <div className="Number_View">
-          <div id='maxValue_viewer' className="Number_View_Child">
+      <div className="Viewer_conf">
+        <div className="NextPrev">
+          <button type="button" onClick={onNext}>Next</button>
+          <button type="button" onClick={onPrev}>Prev</button>
+          <button type="button" onClick={onFirst}>First</button>
+          <button type="button" onClick={onFinal}>Final</button>
+          <div className="Number_View">
+            <div id='maxValue_viewer' className="Number_View_Child">
+            </div>
+            <div className="Number_View_Child">
+              <input type="number" value={val} onChange={onIndexChanged}></input>
+              <button type="button" onClick={setIndex}>Go</button>
+            </div>
           </div>
-          <div className="Number_View_Child">
-            <input type="number" value={val} onChange={onIndexChanged}></input>
-            <button type="button" onClick={setIndex}>Go</button>
-          </div>
+        </div>
+        <div className="ViewMode">
+          <button type="button" onClick={onMode}>Mode Change</button>
         </div>
       </div>
       <div className="Sort_Canvas_Btn">
