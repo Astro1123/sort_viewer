@@ -172,6 +172,8 @@ const drawHeap = function(ctx, canvas, object, index) {
         }
         break;
       case 'swap':
+        tree.select(object[index].object.left.info.index).setValue(object[index].object.right.value);
+        tree.select(object[index].object.right.info.index).setValue(object[index].object.left.value);
         tree.select(object[index].object.left.info.index).setColor('FFAAAA');
         tree.select(object[index].object.right.info.index).setColor('FFAAAA');
         break;
@@ -240,6 +242,8 @@ const drawAC1 = function(ctx, canvas, object, index) {
         }
         break;
       case 'swap':
+        av.setValue(object[index].object.left.info.index, object[index].object.right.value);
+        av.setValue(object[index].object.right.info.index, object[index].object.left.value);
         av.setColor(object[index].object.left.info.index, 'FFAAAA');
         av.setColor(object[index].object.right.info.index, 'FFAAAA');
         break;
