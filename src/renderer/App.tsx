@@ -77,6 +77,8 @@ const drawBar = function(ctx, canvas, object, index) {
         }
         break;
       case 'swap':
+        bv.setValue(object[index].object.left.info.index, object[index].object.right.value);
+        bv.setValue(object[index].object.right.info.index, object[index].object.left.value);
         bv.setColor(object[index].object.left.info.index, 'FFAAAA');
         bv.setColor(object[index].object.right.info.index, 'FFAAAA');
         break;
